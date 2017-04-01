@@ -31,9 +31,9 @@ Centos_yum(){
 Debian_apt(){
 if [[ ${release} = "ubuntu" ]];then
    V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $4}' /etc/os-release`
-   ver=${V:0:2}
+   verd=${V:0:2}
 	apt-get update -y
-  if [[ ${ver} == "14" ]];then
+  if [[ ${verd} == "14" ]];then
 	apt-get install -y vim nginx php5 php5-fpm
 	cd /etc/php5/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
@@ -230,10 +230,29 @@ rm -rf DirectoryLister-master.zip
 
 
 all_start(){
-service nginx restart
-service php-fpm restart
-service php5-fpm restart
-systemctl restart nginx
+if [[ ${release} = "centos" ]];then
+  ver=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $5}' /etc/os-release`
+  if [[ ${ver} == "7" ]];then
+	systemctl restart nginx
+	systemctl restart php-fpm
+  else
+	service nginx restart
+	service php-fpm restart
+elif [[ ${release} = "debian" ]];then
+	service nginx restart
+	service php5-fpm restart
+else 
+	V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $4}' /etc/os-release`
+    verd=${V:0:2}
+  if [[ ${verd} == "14" ]];then
+    service nginx restart
+	service php5-fpm restart
+  else
+    service nginx restart
+	service php7.0-fpm restart
+   fi
+  fi
+ fi
 kill -9 $(ps -ef|grep "aria2c"|grep -v "grep"|awk '{print $2}')
 nohup aria2c -c &>/root/.aria2/aria2.log &
 }
