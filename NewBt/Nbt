@@ -32,6 +32,11 @@ Debian_apt(){
 	apt-get update -y
 	apt-get install -y vim nginx php5 php5-fpm
 	service nginx restart
+	service php5-fpm restart
+	cd /etc/php5/fpm/pool.d
+	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
+	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+	cd
 }
 
 set_mod(){
@@ -85,7 +90,7 @@ server {
     }
        location ~* \.php$ {
         fastcgi_pass   127.0.0.1:9000;
-	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+		fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_index index.php;
     }
@@ -103,7 +108,7 @@ server {
     }
        location ~* \.php$ {
         fastcgi_pass   127.0.0.1:9000;
-	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+		fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_index index.php;
     }
@@ -115,6 +120,7 @@ EOF
 	else
 		 echo "你的IP是${ip} 是否正确[y/N(手动输入)]"
 		 stty erase '^H' && read -p "(默认: y):" rip
+		 [[ -z ${rip} ]] && rip="y"
 		 if [[ ${rip} == [Yy] ]];then
 		  echo "IP已确认"
 		else
@@ -183,8 +189,8 @@ if [[ ${release} = "centos" ]];then
  fi
  
 mkdir /root/.aria2 && cd /root/.aria2
-sed -i '1 s/^/dir='${dir_install_web}'\n/' aria2.conf
 wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/aria2.conf
+sed -i '1 s/^/dir='${dir_install_web}'\n/' aria2.conf
 wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/dht.dat
 echo '' > /root/.aria2/aria2.session
 cd ${dir_install_bt}
