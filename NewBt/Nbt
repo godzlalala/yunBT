@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export PATH
+
+check_os(){
+	if [[ -f /etc/redhat-release ]]; then
+		release="centos"
+	elif cat /etc/issue | grep -q -E -i "debian"; then
+		release="debian"
+	elif cat /etc/issue | grep -q -E -i "ubuntu"; then
+		release="ubuntu"
+	elif cat /etc/issue | grep -q -E -i "centos|red hat|redhat"; then
+		release="centos"
+	elif cat /proc/version | grep -q -E -i "debian"; then
+		release="debian"
+	elif cat /proc/version | grep -q -E -i "ubuntu"; then
+		release="ubuntu"
+	elif cat /proc/version | grep -q -E -i "centos|red hat|redhat"; then
+		release="centos"
+    fi
+}
+
+Centos_yum(){
+	yum install epel-release -y
+	yum update -y
+	yum install -y vim nginx php php-fpm
+	systemctl restart nginx
+	service nginx restart
+}
+
+Debian_apt(){
+	apt-get update -y
+	apt-get install -y vim nginx php5 php5-fpm
+	service nginx restart
+}
+
+set_mod(){
+	echo -e "是否绑定域名？[y(域名模式)/N(IP:端口模式)]"
+	 stty erase '^H' && read -p "(默认: n):" mode
+	  [[ -z ${mode} ]] && mode="n"
+}
+
+config(){
+
+	dir="nginx"
+	dir2="conf.d"
+
+	echo -e "是否指定安装地址？[y/N]"
+	 stty erase '^H' && read -p "(默认: n):" dir_install_yn
+	  [[ -z ${dir_install_yn} ]] && dir_install_yn="n"
+	  if [[ $[dir_install_yn] == [Yy] ]];then
+		 stty erase '^H' && read "请输入完整地址，例如 /www/bt" -p dir_install_bt
+			mkdir -p ${dir_install_bt}
+		 stty erase '^H' && read "请输入完整地址，例如 /www/web" -p dir_install_web
+			mkdir -p ${dir_install_web}
+	  else
+		mkdir -p /www/bt
+		mkdir -p /www/web
+		dir_install_bt="/www/bt"
+		dir_install_web="/www/web"
+	  fi
+ip=`/sbin/ifconfig -a|grep inet|grep -v 127.0.0.1|grep -v inet6|awk '{print $2}'|tr -d "addr:"`
+
+cd /etc/${dir}/${dir2}
+	if [[ ${mode} == [Yy] ]]; then #懒，就不写端口是不是在1-65535了。。。。。。
+		 echo -e "输入BT管理域名" #端口判断都懒得写，你认为我会写判断域名？
+		 stty erase '^H' && read -p "你如果不输默认66y:" bt_domain
+		 [[ -z ${bt_domain} ]] && bt_domain="www.t66y.com"
+		 echo -e "输入下载内容管理域名（不可重复）"
+		 stty erase '^H' && read -p "你如果不输默认66y:" web_domain
+		 [[ -z ${web_domain} ]] && web_port="t66y.com"
+		 if [[ ${bt_domain} = ${web_domain} ]];then
+		 echo "WTF???"
+		 bt_domain="www.t66y.com"
+		 web_domain="t66y.com"		
+		 fi
+		 cat >> bt.conf<< EOF
+server {
+    listen 80;
+    server_name ${bt_domain};
+    root /www/bt/;
+
+    location / {
+        index index.html index.php;
+    }
+       location ~* \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_index index.php;
+    }
+}	  
+EOF
+
+		 cat >> web.conf<< EOF
+server {
+    listen 80;
+    server_name ${web_domain};
+    root /www/web/;
+
+    location / {
+        index index.html index.php;
+    }
+       location ~* \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_index index.php;
+    }
+}	  
+EOF
+
+
+
+	else
+		 echo "你的IP是${ip} 是否正确[y/N(手动输入)]"
+		 stty erase '^H' && read -p "(默认: y):" rip
+		 if [[ ${rip} == [Yy] ]];then
+		  echo "IP已确认"
+		else
+		 read -p "请输入IP" ip
+		fi
+		 echo -e "输入BT管理端口(1-65535)"
+		 stty erase '^H' && read -p "(默认: 6666):" bt_port
+		 [[ -z ${bt_port} ]] && bt_port="6666"
+		 echo -e "输入下载内容管理端口(1-65535)不可重复"
+		 stty erase '^H' && read -p "(默认: 8888):" web_port
+		 [[ -z ${web_port} ]] && web_port="8888"
+		 if [[ ${bt_port} = ${web_port} ]];then
+		 echo "WTF???"
+		 bt_port="6666"
+		 web_port="8888"
+		 fi
+		 cat >> bt.conf<< EOF
+server {
+    listen ${bt_port};
+    server_name ${ip};
+    root /www/bt/;
+
+    location / {
+        index index.html index.php;
+    }
+       location ~* \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+	fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_index index.php;
+    }
+}	  
+EOF
+
+		 cat >> web.conf<< EOF
+server {
+    listen ${web_port};
+    server_name ${ip};
+    root /www/web/;
+
+    location / {
+        index index.html index.php;
+    }
+       location ~* \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+	fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_index index.php;
+    }
+}	  
+EOF
+	fi
+}
+
+bt_install(){
+if [[ ${release} = "centos" ]];then
+  ver=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $5}' /etc/os-release`
+  if [[ ${ver} == "7" ]];then
+	yum install aria2 curl unzip -y
+  else
+	rpm -Uvh ftp://ftp.pbone.net/mirror/apt.sw.be/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
+	yum install aria2 curl unzip -y
+  fi
+ else
+	apt-get install aria2 curl unzip -y
+ fi
+ 
+mkdir /root/.aria2 && cd /root/.aria2
+sed -i '1 s/^/dir='${dir_install_web}'\n/' aria2.conf
+wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/aria2.conf
+wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/dht.dat
+echo '' > /root/.aria2/aria2.session
+cd ${dir_install_bt}
+Ver=$(curl -m 10 -s "https://github.com/mayswind/AriaNg/releases/latest" | perl -e 'while($_=<>){ /\/tag\/(.*)\">redirected/; print $1;}') && wget "https://github.com/mayswind/AriaNg/releases/download/${Ver}/aria-ng-${Ver}.zip" && unzip aria-ng-${Ver}.zip && rm -rf aria-ng-${Ver}.zip
+#上行代码来自逗比大佬doub.io 可以自动检测并下载最新版本。仰望大佬。 
+chmod -R 755 ${dir_install_bt}
+nohup aria2c -c &>/root/.aria2/aria2.log &
+}
+
+
+web_install(){
+cd ${dir_install_web}
+wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/DirectoryLister-master.zip
+unzip DirectoryLister-master.zip
+rm -rf DirectoryLister-master.zip
+}
+
+
+all_start(){
+service nginx restart
+service php-fpm restart
+service php5-fpm restart
+systemctl restart nginx
+kill -9 $(ps -ef|grep "aria2c"|grep -v "grep"|awk '{print $2}')
+nohup aria2c -c &>/root/.aria2/aria2.log &
+}
+
+get_start(){
+check_os
+if [[ ${release} = "centos" ]];then
+ Centos_yum
+else
+ Debian_apt
+fi
+ set_mod
+ config
+ bt_install
+ web_install
+ all_start
+}
+
+get_start
