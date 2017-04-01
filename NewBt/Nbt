@@ -29,13 +29,24 @@ Centos_yum(){
 }
 
 Debian_apt(){
+   V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $3,$4,$5}' /etc/os-release`
+   ver=${V:0:2}
 	apt-get update -y
+if [[ ${ver} == "14" ]];then
 	apt-get install -y vim nginx php5 php5-fpm
 	service nginx restart
 	service php5-fpm restart
 	cd /etc/php5/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
 	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+else
+	apt-get install -y vim nginx php php-fpm
+	service nginx restart
+	service php-fpm restart
+	cd /etc/php/fpm/pool.d
+	sed -i '/listen = \/var\/run\/php-fpm.sock/s/^/#/' www.conf
+	sed -i '/php-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+fi
 	cd
 }
 
@@ -190,7 +201,7 @@ if [[ ${release} = "centos" ]];then
  
 mkdir /root/.aria2 && cd /root/.aria2
 wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/aria2.conf
-sed -i '1 s/^/dir='${dir_install_web}'\n/' aria2.conf
+echo "${dir_install_web}" >> aria2.conf
 wget --no-check-certificate https://raw.githubusercontent.com/godzlalala/yunBT/master/NewBt/dht.dat
 echo '' > /root/.aria2/aria2.session
 cd ${dir_install_bt}
