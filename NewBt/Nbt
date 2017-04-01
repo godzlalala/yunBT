@@ -29,23 +29,32 @@ Centos_yum(){
 }
 
 Debian_apt(){
+if [[ ${release} = "ubuntu" ]];then
    V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $3,$4,$5}' /etc/os-release`
    ver=${V:0:2}
 	apt-get update -y
-if [[ ${ver} == "14" ]];then
+  if [[ ${ver} == "14" ]];then
 	apt-get install -y vim nginx php5 php5-fpm
 	service nginx restart
 	service php5-fpm restart
 	cd /etc/php5/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
 	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
-else
+  else
 	apt-get install -y vim nginx php php-fpm
 	service nginx restart
 	service php-fpm restart
 	cd /etc/php/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php-fpm.sock/s/^/#/' www.conf
 	sed -i '/php-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+   fi
+else
+    apt-get install -y vim nginx php5 php5-fpm
+	service nginx restart
+	service php5-fpm restart
+	cd /etc/php5/fpm/pool.d
+	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
+	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
 fi
 	cd
 }
