@@ -35,26 +35,26 @@ if [[ ${release} = "ubuntu" ]];then
 	apt-get update -y
   if [[ ${ver} == "14" ]];then
 	apt-get install -y vim nginx php5 php5-fpm
-	service nginx restart
-	service php5-fpm restart
 	cd /etc/php5/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
 	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+	service nginx restart
+	service php5-fpm restart
   else
 	apt-get install -y vim nginx php php-fpm
+	cd /etc/php/7.0/fpm/pool.d
+	sed -i '/listen = \/var\/run\/php\/php7.0-fpm.sock/s/^/#/' www.conf
+	sed -i '/php7.0-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
 	service nginx restart
-	service php-fpm restart
-	cd /etc/php/fpm/pool.d
-	sed -i '/listen = \/var\/run\/php-fpm.sock/s/^/#/' www.conf
-	sed -i '/php-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+	service php7.0-fpm restart
    fi
 else
     apt-get install -y vim nginx php5 php5-fpm
-	service nginx restart
-	service php5-fpm restart
 	cd /etc/php5/fpm/pool.d
 	sed -i '/listen = \/var\/run\/php5-fpm.sock/s/^/#/' www.conf
 	sed -i '/php5-fpm.sock/a\listen = 127.0.0.1:9000' www.conf
+	service nginx restart
+	service php5-fpm restart
 fi
 	cd
 }
