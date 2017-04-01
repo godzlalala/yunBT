@@ -238,12 +238,14 @@ if [[ ${release} = "centos" ]];then
   else
 	service nginx restart
 	service php-fpm restart
-elif [[ ${release} = "debian" ]];then
+  fi
+if  ${release} = "debian";then
 	service nginx restart
 	service php5-fpm restart
 else 
 	V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $4}' /etc/os-release`
     verd=${V:0:2}
+fi
   if [[ ${verd} == "14" ]];then
     service nginx restart
 	service php5-fpm restart
@@ -251,7 +253,6 @@ else
     service nginx restart
 	service php7.0-fpm restart
    fi
-  fi
  fi
 kill -9 $(ps -ef|grep "aria2c"|grep -v "grep"|awk '{print $2}')
 nohup aria2c -c &>/root/.aria2/aria2.log &
