@@ -30,7 +30,7 @@ Centos_yum(){
 
 Debian_apt(){
 if [[ ${release} = "ubuntu" ]];then
-   V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $3,$4,$5}' /etc/os-release`
+   V=`[ -f /etc/os-release ] && awk -F'[= "]' '/PRETTY_NAME/{print $4}' /etc/os-release`
    ver=${V:0:2}
 	apt-get update -y
   if [[ ${ver} == "14" ]];then
